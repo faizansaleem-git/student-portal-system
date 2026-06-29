@@ -138,4 +138,6 @@ student-portal-system/
 ```
 
 ## Authors
-Leeds Beckett University — SESC Microservices Module
+Faizan Saleem 
+Faizan Zafar 
+Hiral Jahlani
