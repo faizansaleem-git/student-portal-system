@@ -1,0 +1,45 @@
+# Finance Service standalone docker-compose
+# Starts: finance-mongodb + finance-service
+# Use this for isolated development of the Finance service.
+# For the full system, use the root-level docker-compose.yml.
+
+services:
+
+  finance-mongodb:
+    image: mongo:8.0
+    container_name: finance-mongodb
+    restart: unless-stopped
+    ports:
+      - "27018:27017"          # 27018 on host → 27017 in container
+    volumes:
+      - finance-mongo-data:/data/db
+    healthcheck:
+      test: ["CMD", "mongosh", "--eval", "db.adminCommand('ping')"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 20s
+
+  finance-service:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: finance-service
+    restart: unless-stopped
+    ports:
+      - "8082:8082"
+    environment:
+      PORT: 8082
+      MONGO_URI: mongodb://finance-mongodb:27017/financedb
+    depends_on:
+      finance-mongodb:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "wget", "-qO-", "http://localhost:8082/health"]
+      interval: 15s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
+
+volumes:
+  finance-mongo-data:

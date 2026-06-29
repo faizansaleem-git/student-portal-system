@@ -1,0 +1,88 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8"/>
+    <meta name="viewport" content="width=device-width, initial-scale=1"/>
+    <title>Student Portal — Browse Courses</title>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css"/>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.0/font/bootstrap-icons.css"/>
+</head>
+<body>
+<nav class="navbar navbar-expand-lg navbar-dark bg-primary">
+    <div class="container">
+        <a class="navbar-brand fw-bold" th:href="@{/dashboard}">Student Portal</a>
+        <div class="collapse navbar-collapse">
+            <ul class="navbar-nav me-auto">
+                <li class="nav-item"><a class="nav-link" th:href="@{/dashboard}">Dashboard</a></li>
+                <li class="nav-item"><a class="nav-link active" th:href="@{/courses}">Browse Courses</a></li>
+                <li class="nav-item"><a class="nav-link" th:href="@{/enrolments}">My Enrolments</a></li>
+                <li class="nav-item"><a class="nav-link" th:href="@{/profile}">Profile</a></li>
+                <li class="nav-item"><a class="nav-link" th:href="@{/enrolments/graduation}">Graduation</a></li>
+            </ul>
+            <ul class="navbar-nav">
+                <li class="nav-item">
+                    <form th:action="@{/logout}" method="post" class="d-inline">
+                        <button type="submit" class="btn btn-outline-light btn-sm">Logout</button>
+                    </form>
+                </li>
+            </ul>
+        </div>
+    </div>
+</nav>
+
+<div class="container py-4">
+    <h2 class="fw-bold mb-4">Browse Courses</h2>
+
+    <div th:if="${param.enrolled}" class="alert alert-success alert-dismissible fade show">
+        <i class="bi bi-check-circle me-2"></i>Successfully enrolled! An invoice has been created — pay it via the Finance Portal.
+        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+    </div>
+    <div th:if="${param.error}" class="alert alert-warning" th:text="${param.error}"></div>
+
+    <!-- Search -->
+    <form th:action="@{/courses}" method="get" class="mb-4">
+        <div class="input-group">
+            <input type="text" name="search" class="form-control form-control-lg"
+                   placeholder="Search by title or department..." th:value="${search}"/>
+            <button type="submit" class="btn btn-primary">
+                <i class="bi bi-search"></i> Search
+            </button>
+            <a th:href="@{/courses}" class="btn btn-outline-secondary">Clear</a>
+        </div>
+    </form>
+
+    <!-- Course cards -->
+    <div class="row g-3" th:if="${not #lists.isEmpty(courses)}">
+        <div class="col-md-6 col-lg-4" th:each="course : ${courses}">
+            <div class="card h-100 shadow-sm">
+                <div class="card-body">
+                    <span class="badge bg-secondary mb-2" th:text="${course.department}"></span>
+                    <h5 class="card-title" th:text="${course.title}"></h5>
+                    <p class="card-text text-muted small" th:text="${course.description}"></p>
+                </div>
+                <div class="card-footer d-flex justify-content-between align-items-center">
+                    <div>
+                        <span class="badge bg-light text-dark border me-1" th:text="${course.code}"></span>
+                        <span class="text-muted small" th:text="${course.credits} + ' credits'"></span>
+                    </div>
+                    <span th:if="${enrolledCourseIds.contains(course.id)}"
+                          class="badge bg-success"><i class="bi bi-check2"></i> Enrolled</span>
+                    <form th:unless="${enrolledCourseIds.contains(course.id)}"
+                          th:action="@{/enrolments/enrol/{id}(id=${course.id})}" method="post">
+                        <button type="submit" class="btn btn-primary btn-sm">
+                            <i class="bi bi-plus-circle me-1"></i>Enrol — £1,500
+                        </button>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div th:if="${#lists.isEmpty(courses)}" class="text-center py-5 text-muted">
+        <i class="bi bi-search fs-1 d-block mb-2"></i>
+        No courses found for "<span th:text="${search}"></span>".
+    </div>
+</div>
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+</html>

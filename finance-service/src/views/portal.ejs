@@ -1,0 +1,109 @@
+<%- include('partials/header') %>
+
+<div class="row justify-content-center">
+    <div class="col-md-8 col-lg-6">
+
+        <h2 class="mb-1">Finance Portal</h2>
+        <p class="text-muted mb-4">Enter an invoice reference to view details or make a payment.</p>
+
+        <%# ── Lookup form ───────────────────────────────────────────────────── %>
+        <div class="card mb-4">
+            <div class="card-body">
+                <h5 class="card-title mb-3">Look Up Invoice</h5>
+                <form action="/portal/lookup" method="POST">
+                    <div class="mb-3">
+                        <label for="reference" class="form-label">Invoice Reference</label>
+                        <input
+                            type="text"
+                            class="form-control"
+                            id="reference"
+                            name="reference"
+                            placeholder="e.g. a3f2e1d0-4b5c-6d7e-8f9a-0b1c2d3e4f5a"
+                            maxlength="64"
+                            pattern="[a-zA-Z0-9\-]+"
+                            title="Letters, numbers, and hyphens only"
+                            required
+                            value="<%= invoice ? invoice.referenceNumber : '' %>"
+                        >
+                        <div class="form-text">The reference was sent to you when you enrolled or received a fine.</div>
+                    </div>
+                    <button type="submit" class="btn btn-success w-100">Look Up</button>
+                </form>
+            </div>
+        </div>
+
+        <%# ── Error alert ──────────────────────────────────────────────────── %>
+        <% if (error) { %>
+        <div class="alert alert-danger alert-dismissible fade show" role="alert">
+            <strong>Error:</strong> <%= error %>
+            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        </div>
+        <% } %>
+
+        <%# ── Success alert ─────────────────────────────────────────────────── %>
+        <% if (success) { %>
+        <div class="alert alert-success alert-dismissible fade show" role="alert">
+            <strong>Success:</strong> <%= success %>
+            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        </div>
+        <% } %>
+
+        <%# ── Invoice details card ──────────────────────────────────────────── %>
+        <% if (invoice) { %>
+        <div class="card">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <strong>Invoice Details</strong>
+                <% if (invoice.status === 'OUTSTANDING') { %>
+                    <span class="badge badge-outstanding bg-danger">OUTSTANDING</span>
+                <% } else { %>
+                    <span class="badge badge-paid bg-success">PAID</span>
+                <% } %>
+            </div>
+            <div class="card-body">
+                <dl class="row mb-0">
+                    <dt class="col-sm-4">Reference</dt>
+                    <dd class="col-sm-8 font-monospace small"><%= invoice.referenceNumber %></dd>
+
+                    <dt class="col-sm-4">Student ID</dt>
+                    <dd class="col-sm-8"><%= invoice.studentId %></dd>
+
+                    <dt class="col-sm-4">Description</dt>
+                    <dd class="col-sm-8"><%= invoice.description %></dd>
+
+                    <dt class="col-sm-4">Amount</dt>
+                    <dd class="col-sm-8">£<%= invoice.amount.toFixed(2) %></dd>
+
+                    <dt class="col-sm-4">Status</dt>
+                    <dd class="col-sm-8">
+                        <% if (invoice.status === 'OUTSTANDING') { %>
+                            <span class="text-danger fw-bold">OUTSTANDING</span>
+                        <% } else { %>
+                            <span class="text-success fw-bold">PAID</span>
+                        <% } %>
+                    </dd>
+
+                    <dt class="col-sm-4">Created</dt>
+                    <dd class="col-sm-8"><%= new Date(invoice.createdAt).toLocaleString('en-GB') %></dd>
+                </dl>
+
+                <% if (invoice.status === 'OUTSTANDING') { %>
+                    <hr>
+                    <form action="/portal/pay/<%= invoice.referenceNumber %>" method="POST">
+                        <button type="submit" class="btn btn-warning w-100 fw-bold">
+                            Pay £<%= invoice.amount.toFixed(2) %> Now
+                        </button>
+                    </form>
+                <% } else { %>
+                    <hr>
+                    <p class="text-success mb-0 text-center">
+                        ✅ This invoice has already been paid. No further action needed.
+                    </p>
+                <% } %>
+            </div>
+        </div>
+        <% } %>
+
+    </div>
+</div>
+
+<%- include('partials/footer') %>

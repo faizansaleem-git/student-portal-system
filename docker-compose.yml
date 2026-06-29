@@ -1,0 +1,149 @@
+# Root-level docker-compose — starts ALL 6 containers
+#
+# Services:
+#   student-mysql     — MySQL 8 for Student Service       (port 3307)
+#   library-mysql     — MySQL 8 for Library Service       (port 3308)
+#   finance-mongodb   — MongoDB 8 for Finance Service     (port 27018)
+#   student-service   — Spring Boot Student Portal        (port 8080)
+#   finance-service   — Node.js Finance Portal            (port 8082)
+#   library-service   — Spring Boot Library Portal        (port 8083)
+#
+# Start everything:  docker compose up --build -d
+# Stop everything:   docker compose down
+# View logs:         docker compose logs -f <service-name>
+
+services:
+
+  # ── Databases ──────────────────────────────────────────────────────────────
+
+  student-mysql:
+    image: mysql:8.0
+    container_name: student-mysql
+    restart: unless-stopped
+    environment:
+      MYSQL_ROOT_PASSWORD: root
+      MYSQL_DATABASE: studentdb
+    ports:
+      - "3307:3306"
+    volumes:
+      - student-mysql-data:/var/lib/mysql
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-u", "root", "-proot"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 40s
+
+  library-mysql:
+    image: mysql:8.0
+    container_name: library-mysql
+    restart: unless-stopped
+    environment:
+      MYSQL_ROOT_PASSWORD: root
+      MYSQL_DATABASE: librarydb
+    ports:
+      - "3308:3306"
+    volumes:
+      - library-mysql-data:/var/lib/mysql
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-u", "root", "-proot"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 40s
+
+  finance-mongodb:
+    image: mongo:8.0
+    container_name: finance-mongodb
+    restart: unless-stopped
+    ports:
+      - "27018:27017"
+    volumes:
+      - finance-mongo-data:/data/db
+    healthcheck:
+      test: ["CMD", "mongosh", "--eval", "db.adminCommand('ping')"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 30s
+
+  # ── Microservices ──────────────────────────────────────────────────────────
+
+  finance-service:
+    build:
+      context: ./finance-service
+      dockerfile: Dockerfile
+    container_name: finance-service
+    restart: unless-stopped
+    ports:
+      - "8082:8082"
+    environment:
+      MONGO_URI: mongodb://finance-mongodb:27017/financedb
+      PORT: 8082
+    depends_on:
+      finance-mongodb:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "wget", "-qO-", "http://localhost:8082/health"]
+      interval: 15s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
+
+  library-service:
+    build:
+      context: ./library-service
+      dockerfile: Dockerfile
+    container_name: library-service
+    restart: unless-stopped
+    ports:
+      - "8083:8083"
+    environment:
+      LIBRARY_DB_URL: jdbc:mysql://library-mysql:3306/librarydb?createDatabaseIfNotExist=true&serverTimezone=UTC
+      LIBRARY_DB_USER: root
+      LIBRARY_DB_PASSWORD: root
+      FINANCE_SERVICE_URL: http://finance-service:8082
+    depends_on:
+      library-mysql:
+        condition: service_healthy
+      finance-service:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8083/health"]
+      interval: 15s
+      timeout: 5s
+      retries: 5
+      start_period: 90s
+
+  student-service:
+    build:
+      context: ./student-service
+      dockerfile: Dockerfile
+    container_name: student-service
+    restart: unless-stopped
+    ports:
+      - "8080:8080"
+    environment:
+      STUDENT_DB_URL: jdbc:mysql://student-mysql:3306/studentdb?createDatabaseIfNotExist=true&serverTimezone=UTC
+      STUDENT_DB_USER: root
+      STUDENT_DB_PASSWORD: root
+      FINANCE_SERVICE_URL: http://finance-service:8082
+      LIBRARY_SERVICE_URL: http://library-service:8083
+    depends_on:
+      student-mysql:
+        condition: service_healthy
+      finance-service:
+        condition: service_healthy
+      library-service:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8080/health"]
+      interval: 15s
+      timeout: 5s
+      retries: 5
+      start_period: 90s
+
+volumes:
+  student-mysql-data:
+  library-mysql-data:
+  finance-mongo-data:

@@ -1,0 +1,50 @@
+# Library Service standalone docker-compose
+# Starts: library-mysql + library-service
+# Finance service must be running separately for fine posting to work.
+# For the full system, use the root-level docker-compose.yml.
+
+services:
+
+  library-mysql:
+    image: mysql:8.0
+    container_name: library-mysql
+    restart: unless-stopped
+    environment:
+      MYSQL_ROOT_PASSWORD: root
+      MYSQL_DATABASE: librarydb
+    ports:
+      - "3308:3306"
+    volumes:
+      - library-mysql-data:/var/lib/mysql
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-u", "root", "-proot"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 40s
+
+  library-service:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: library-service
+    restart: unless-stopped
+    ports:
+      - "8083:8083"
+    environment:
+      LIBRARY_DB_URL: jdbc:mysql://library-mysql:3306/librarydb?createDatabaseIfNotExist=true&serverTimezone=UTC
+      LIBRARY_DB_USER: root
+      LIBRARY_DB_PASSWORD: root
+      FINANCE_SERVICE_URL: http://finance-service:8082
+    depends_on:
+      library-mysql:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8083/health"]
+      interval: 15s
+      timeout: 5s
+      retries: 5
+      start_period: 60s
+
+volumes:
+  library-mysql-data:

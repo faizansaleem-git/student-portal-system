@@ -1,0 +1,140 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dashboard — Library Portal</title>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css">
+    <style>body{background:#f8f9fa;} .card{box-shadow:0 2px 8px rgba(0,0,0,.08);}</style>
+</head>
+<body>
+<nav class="navbar navbar-expand-lg navbar-dark bg-primary">
+    <div class="container">
+        <a class="navbar-brand fw-bold" href="/dashboard">📚 Library Portal</a>
+        <div class="d-flex align-items-center gap-3">
+            <a href="/books" class="btn btn-outline-light btn-sm">Browse Books</a>
+            <a href="/my-loans" class="btn btn-outline-light btn-sm">My Loans</a>
+            <form th:action="@{/logout}" method="post" class="d-inline">
+                <button class="btn btn-light btn-sm" type="submit">Logout</button>
+            </form>
+        </div>
+    </div>
+</nav>
+
+<div class="container mt-4">
+    <div th:if="${success}" class="alert alert-success alert-dismissible fade show">
+        <span th:text="${success}"></span><button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+    </div>
+    <div th:if="${warning}" class="alert alert-warning alert-dismissible fade show">
+        <span th:text="${warning}"></span><button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+    </div>
+    <div th:if="${error}" class="alert alert-danger alert-dismissible fade show">
+        <span th:text="${error}"></span><button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+    </div>
+
+    <h2 class="mb-1">Welcome, <span th:text="${account.studentId}">Student</span></h2>
+    <p class="text-muted mb-4">Library Portal — Leeds Beckett University</p>
+
+    <div class="row g-3 mb-4">
+        <div class="col-md-4">
+            <div class="card text-center h-100">
+                <div class="card-body">
+                    <h1 class="display-4 text-primary" th:text="${activeLoans.size()}">0</h1>
+                    <p class="text-muted mb-0">Active Loans</p>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <a href="/books" class="card text-decoration-none h-100">
+                <div class="card-body text-center">
+                    <div class="fs-1">🔍</div>
+                    <p class="fw-bold mb-0">Browse &amp; Borrow</p>
+                </div>
+            </a>
+        </div>
+        <div class="col-md-4">
+            <a href="/my-loans" class="card text-decoration-none h-100">
+                <div class="card-body text-center">
+                    <div class="fs-1">📋</div>
+                    <p class="fw-bold mb-0">My Loan History</p>
+                </div>
+            </a>
+        </div>
+    </div>
+
+    <!-- Active loans -->
+    <div class="card" th:if="${!activeLoans.isEmpty()}">
+        <div class="card-header"><strong>Current Loans</strong></div>
+        <div class="card-body p-0">
+            <table class="table table-hover mb-0">
+                <thead><tr>
+                    <th>Book</th><th>Author</th><th>Borrowed</th><th>Due</th><th>Action</th>
+                </tr></thead>
+                <tbody>
+                <tr th:each="loan : ${activeLoans}">
+                    <td th:text="${loan.book.title}"></td>
+                    <td th:text="${loan.book.author}"></td>
+                    <td th:text="${#temporals.format(loan.borrowedAt,'dd MMM yyyy')}"></td>
+                    <td>
+                        <span th:with="due=${loan.borrowedAt.plusDays(14)}"
+                              th:class="${due.isBefore(#temporals.createNow()) ? 'text-danger fw-bold' : ''}"
+                              th:text="${#temporals.format(due,'dd MMM yyyy')}"></span>
+                    </td>
+                    <td>
+                        <button class="btn btn-sm btn-outline-warning"
+                                th:attr="data-loan-id=${loan.id}, data-book-title=${loan.book.title}"
+                                onclick="openReturnModal(this)">
+                            Return
+                        </button>
+                    </td>
+                </tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+    <div class="alert alert-info mt-3" th:if="${activeLoans.isEmpty()}">
+        You have no active loans. <a href="/books">Browse books to borrow one.</a>
+    </div>
+</div>
+
+<!-- Return book confirmation modal -->
+<div class="modal fade" id="returnModal" tabindex="-1" aria-labelledby="returnModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content border-0 shadow">
+            <div class="modal-header border-0 pb-0">
+                <h5 class="modal-title fw-bold" id="returnModalLabel">Return Book</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body py-3">
+                <div class="d-flex align-items-start gap-3">
+                    <div class="fs-2">📖</div>
+                    <div>
+                        <p class="mb-1">You are about to return:</p>
+                        <p class="fw-bold mb-1" id="returnBookTitle"></p>
+                        <p class="text-muted small mb-0">If this book is overdue, a late return fine will be calculated automatically.</p>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer border-0 pt-0">
+                <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancel</button>
+                <form id="returnForm" method="post">
+                    <input type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}"/>
+                    <button type="submit" class="btn btn-warning fw-semibold px-4">Confirm Return</button>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+<footer class="mt-5 py-3 bg-light border-top text-center text-muted small">
+    Library Microservice &nbsp;|&nbsp; Student Portal System &nbsp;|&nbsp; Leeds Beckett University
+</footer>
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+<script>
+    function openReturnModal(btn) {
+        document.getElementById('returnBookTitle').textContent = btn.dataset.bookTitle;
+        document.getElementById('returnForm').action = '/return/' + btn.dataset.loanId;
+        new bootstrap.Modal(document.getElementById('returnModal')).show();
+    }
+</script>
+</body>
+</html>

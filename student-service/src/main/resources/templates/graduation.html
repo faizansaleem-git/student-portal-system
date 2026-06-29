@@ -1,0 +1,181 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8"/>
+    <meta name="viewport" content="width=device-width, initial-scale=1"/>
+    <title>Student Portal — Graduation Eligibility</title>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css"/>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.0/font/bootstrap-icons.css"/>
+</head>
+<body>
+<nav class="navbar navbar-expand-lg navbar-dark bg-primary">
+    <div class="container">
+        <a class="navbar-brand fw-bold" th:href="@{/dashboard}">Student Portal</a>
+        <div class="collapse navbar-collapse">
+            <ul class="navbar-nav me-auto">
+                <li class="nav-item"><a class="nav-link" th:href="@{/dashboard}">Dashboard</a></li>
+                <li class="nav-item"><a class="nav-link" th:href="@{/courses}">Browse Courses</a></li>
+                <li class="nav-item"><a class="nav-link" th:href="@{/enrolments}">My Enrolments</a></li>
+                <li class="nav-item"><a class="nav-link" th:href="@{/profile}">Profile</a></li>
+                <li class="nav-item"><a class="nav-link active" th:href="@{/enrolments/graduation}">Graduation</a></li>
+            </ul>
+            <ul class="navbar-nav">
+                <li class="nav-item">
+                    <form th:action="@{/logout}" method="post" class="d-inline">
+                        <button type="submit" class="btn btn-outline-light btn-sm">Logout</button>
+                    </form>
+                </li>
+            </ul>
+        </div>
+    </div>
+</nav>
+
+<div class="container py-4">
+    <div class="row justify-content-center">
+        <div class="col-lg-7">
+
+            <!-- Credits progress card -->
+            <div class="card shadow-sm mb-4">
+                <div class="card-body">
+                    <h5 class="card-title fw-bold mb-3">
+                        <i class="bi bi-award me-2 text-primary"></i>Credit Progress
+                    </h5>
+                    <div class="d-flex justify-content-between mb-1">
+                        <span>Credits Earned</span>
+                        <span class="fw-bold">
+                            <span th:text="${status.earnedCredits}">0</span>
+                            / <span th:text="${status.requiredCredits}">120</span>
+                        </span>
+                    </div>
+                    <div class="progress mb-2" style="height:20px">
+                        <div class="progress-bar"
+                             th:classappend="${status.creditsComplete} ? 'bg-success' : 'bg-primary'"
+                             role="progressbar"
+                             th:style="'width:' + ${status.creditPercent} + '%'"
+                             th:text="${status.creditPercent} + '%'">
+                        </div>
+                    </div>
+                    <p class="text-muted small mb-0 text-success" th:if="${status.creditsComplete}">Credit requirement met.</p>
+                    <p class="text-muted small mb-0" th:unless="${status.creditsComplete}">
+                        You need <strong th:text="${status.remainingCredits}"></strong> more credits. Enrol in more courses.
+                    </p>
+                </div>
+            </div>
+
+            <!-- Eligibility checklist -->
+            <div class="card shadow-sm mb-4">
+                <div class="card-body">
+                    <h5 class="card-title fw-bold mb-3">
+                        <i class="bi bi-list-check me-2 text-primary"></i>Eligibility Checklist
+                    </h5>
+                    <ul class="list-group list-group-flush">
+
+                        <!-- Credits -->
+                        <li class="list-group-item d-flex justify-content-between align-items-start px-0">
+                            <div>
+                                <i class="bi me-2"
+                                   th:classappend="${status.creditsComplete} ? 'bi-check-circle-fill text-success' : 'bi-x-circle-fill text-danger'"></i>
+                                <strong>Complete <span th:text="${status.requiredCredits}"></span> credits</strong>
+                                <div class="text-muted small ms-4"
+                                     th:if="${!status.creditsComplete}"
+                                     th:text="'Currently at ' + ${status.earnedCredits} + ' credits — enrol in more courses to reach ' + ${status.requiredCredits} + '.'">
+                                </div>
+                            </div>
+                            <span class="badge rounded-pill"
+                                  th:classappend="${status.creditsComplete} ? 'bg-success' : 'bg-danger'"
+                                  th:text="${status.earnedCredits} + '/' + ${status.requiredCredits}">
+                            </span>
+                        </li>
+
+                        <!-- Finance -->
+                        <li class="list-group-item d-flex justify-content-between align-items-start px-0">
+                            <div>
+                                <i class="bi me-2"
+                                   th:classappend="${!status.hasUnpaidInvoices} ? 'bi-check-circle-fill text-success' : 'bi-x-circle-fill text-danger'"></i>
+                                <strong>No outstanding tuition invoices</strong>
+                                <div class="text-muted small ms-4" th:if="${status.hasUnpaidInvoices}">
+                                    You have unpaid invoices. Go to the
+                                    <a th:href="${financePortalUrl}" target="_blank">Finance Portal</a>,
+                                    pay them, then come back and re-check.
+                                </div>
+                            </div>
+                            <span class="badge rounded-pill"
+                                  th:classappend="${!status.hasUnpaidInvoices} ? 'bg-success' : 'bg-danger'"
+                                  th:text="${!status.hasUnpaidInvoices} ? 'Clear' : 'Unpaid'">
+                            </span>
+                        </li>
+
+                        <!-- Library -->
+                        <li class="list-group-item d-flex justify-content-between align-items-start px-0">
+                            <div>
+                                <i class="bi me-2"
+                                   th:classappend="${!status.hasBorrowedBooks} ? 'bi-check-circle-fill text-success' : 'bi-x-circle-fill text-danger'"></i>
+                                <strong>No borrowed library books</strong>
+                                <div class="text-muted small ms-4" th:if="${status.hasBorrowedBooks}">
+                                    You have books checked out. Return them via the Library Portal, then come back and re-check.
+                                </div>
+                            </div>
+                            <span class="badge rounded-pill"
+                                  th:classappend="${!status.hasBorrowedBooks} ? 'bg-success' : 'bg-danger'"
+                                  th:text="${!status.hasBorrowedBooks} ? 'Clear' : 'Books Out'">
+                            </span>
+                        </li>
+
+                    </ul>
+                </div>
+            </div>
+
+            <!-- Result banner -->
+            <div th:if="${status.eligible}" class="card border-success shadow-sm mb-3">
+                <div class="card-body text-center py-4">
+                    <div class="display-3 text-success mb-2"><i class="bi bi-mortarboard-fill"></i></div>
+                    <h2 class="fw-bold text-success">Congratulations!</h2>
+                    <p class="lead mb-1">
+                        <strong th:text="${student.fullName}"></strong>, you are eligible for graduation.
+                    </p>
+                    <p class="text-muted small">Student ID: <strong th:text="${student.studentId}"></strong></p>
+                    <p class="text-muted small mb-0">All requirements met — <span th:text="${status.earnedCredits}"></span> credits earned, invoices clear, no library loans.</p>
+                </div>
+            </div>
+
+            <div th:unless="${status.eligible}" class="card border-warning shadow-sm mb-3">
+                <div class="card-body text-center py-3">
+                    <div class="fs-1 text-warning mb-1"><i class="bi bi-hourglass-split"></i></div>
+                    <h4 class="fw-bold text-warning">Not Yet Eligible</h4>
+                    <!-- Which specific items are blocking -->
+                    <p class="mb-2" th:if="${!status.creditsComplete and !status.hasUnpaidInvoices and !status.hasBorrowedBooks}">
+                        You have no unpaid invoices and no borrowed books —
+                        just complete your remaining <strong th:text="${status.requiredCredits - status.earnedCredits}"></strong> credits to become eligible.
+                    </p>
+                    <p class="mb-2" th:if="${status.hasUnpaidInvoices and !status.hasBorrowedBooks}">
+                        Pay your outstanding invoices at the Finance Portal, then re-check.
+                    </p>
+                    <p class="mb-2" th:if="${!status.hasUnpaidInvoices and status.hasBorrowedBooks}">
+                        Return all borrowed books at the Library Portal, then re-check.
+                    </p>
+                    <p class="mb-2" th:if="${status.hasUnpaidInvoices and status.hasBorrowedBooks}">
+                        Pay your invoices and return borrowed books, then re-check.
+                    </p>
+                </div>
+            </div>
+
+            <div class="d-flex gap-2 justify-content-center">
+                <a th:href="@{/enrolments/graduation}" class="btn btn-primary">
+                    <i class="bi bi-arrow-clockwise me-1"></i>Re-check Eligibility
+                </a>
+                <a th:href="@{/courses}" class="btn btn-outline-primary"
+                   th:if="${!status.creditsComplete}">
+                    Browse More Courses
+                </a>
+                <a th:href="${financePortalUrl}" target="_blank" class="btn btn-outline-success"
+                   th:if="${status.hasUnpaidInvoices}">
+                    Finance Portal
+                </a>
+            </div>
+
+        </div>
+    </div>
+</div>
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+</html>

@@ -1,0 +1,33 @@
+# Maven build output
+target/
+*.class
+*.jar
+*.war
+
+# Node.js
+node_modules/
+npm-debug.log*
+
+# IntelliJ IDEA
+.idea/
+*.iml
+*.iws
+*.ipr
+
+# VS Code
+.vscode/
+
+# Environment files
+.env
+.env.local
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Logs
+logs/
+*.log
+
+# Docker volumes
+docker-volumes/
