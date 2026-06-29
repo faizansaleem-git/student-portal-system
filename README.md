@@ -138,6 +138,6 @@ student-portal-system/
 ```
 
 ## Authors
-Faizan Saleem 
-Faizan Zafar 
+Faizan Saleem |
+Faizan Zafar |
 Hiral Jahlani
